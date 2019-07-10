@@ -2,22 +2,26 @@ package com.luckypines.android.accel1
 
 import android.content.ComponentName
 import android.content.ServiceConnection
+import android.location.Location
 import android.os.IBinder
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
-class MainViewModel: ViewModel(), ServiceConnection, OnValueChangedListener {
+class MainViewModel: ViewModel(), ServiceConnection, OnValueChangedListener, OnLocationChangedListener {
 
     private var binder: MainServiceBinder? = null
     private val data = MutableLiveData<FloatArray>()
+    private val locations = MutableLiveData<List<Location>>()
     private var count: Int = 0
     private var bound: Boolean = false
 
     override fun onServiceConnected(componentName: ComponentName?, binder: IBinder?) {
         this.binder = binder as MainServiceBinder
-        this.binder?.setOnValueChangedListener(this)
+        this.binder?.also {
+            it.setOnValueChangedListener(this)
+            it.setOnLocationChangedListener(this)
+        }
         this.bound = true
     }
 
@@ -37,8 +41,10 @@ class MainViewModel: ViewModel(), ServiceConnection, OnValueChangedListener {
 
     val dataCount: Int get() = count
 
-    override fun onCleared() {
-        super.onCleared()
-        Log.d(">>>>>>", "CLEARED???")
+    override fun onLocationChanged(locations: List<Location>) {
+        this.locations.postValue(locations)
+    }
+    fun getLocations(): LiveData<List<Location>> {
+        return locations
     }
 }

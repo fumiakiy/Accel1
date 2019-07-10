@@ -1,35 +1,51 @@
 package com.luckypines.android.accel1
 
-import android.app.*
-import android.app.PendingIntent.FLAG_NO_CREATE
-import android.app.PendingIntent.FLAG_UPDATE_CURRENT
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.location.Location
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.google.android.gms.location.*
 import kotlin.math.abs
 
 interface OnValueChangedListener {
     fun onValueChanged(values: FloatArray)
 }
 
+interface OnLocationChangedListener {
+    fun onLocationChanged(locations: List<Location>)
+}
+
 class MainServiceBinder: Binder() {
 
-    private var listener: OnValueChangedListener? = null
+    private var onValueChangedListener: OnValueChangedListener? = null
+    private var onLocationChangedListener: OnLocationChangedListener? = null
 
     fun setOnValueChangedListener(listener: OnValueChangedListener?) {
-        this.listener = listener
+        this.onValueChangedListener = listener
     }
 
     internal fun setData(values: FloatArray) {
-        this.listener?.onValueChanged(values.copyOf())
+        this.onValueChangedListener?.onValueChanged(values.copyOf())
+    }
+
+    fun setOnLocationChangedListener(listener: OnLocationChangedListener?) {
+        this.onLocationChangedListener = listener
+    }
+
+    internal fun setLocations(locations: List<Location>) {
+        this.onLocationChangedListener?.onLocationChanged(locations)
     }
 }
 
@@ -40,6 +56,7 @@ class MainService: Service() {
 
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
+    private var locationClient: FusedLocationProviderClient? = null
     private var binder = MainServiceBinder()
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -52,6 +69,13 @@ class MainService: Service() {
 
     override fun onCreate() {
         super.onCreate()
+        locationClient = LocationServices.getFusedLocationProviderClient(this)
+        val locationRequest = LocationRequest.create()?.apply {
+            interval = 500
+            fastestInterval = 100
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+        locationClient?.requestLocationUpdates(locationRequest, locationCallback, null)
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
         accelerometer?.let {
@@ -75,6 +99,7 @@ class MainService: Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        locationClient?.removeLocationUpdates(locationCallback)
         sensorManager.unregisterListener(sensorListener)
     }
 
@@ -103,4 +128,12 @@ class MainService: Service() {
             notificationManager.createNotificationChannel(channel)
         }
     }
+
+    val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult?) {
+            locationResult ?: return
+            binder.setLocations(locationResult.locations)
+        }
+    }
+
 }

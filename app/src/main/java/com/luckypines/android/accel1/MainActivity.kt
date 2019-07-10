@@ -1,6 +1,7 @@
 package com.luckypines.android.accel1
 
 import android.content.Intent
+import android.location.Location
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
@@ -19,6 +20,12 @@ class MainActivity : AppCompatActivity() {
         vm.getData().observe(this, Observer<FloatArray> { values ->
             runOnUiThread {
                 displayText.text = String.format("x: %.2f\ny:%.2f\nz:%.2f", values[0], values[1], values[2])
+            }
+        })
+        vm.getLocations().observe(this, Observer<List<Location>> {
+            val l = it.lastOrNull() ?: return@Observer
+            runOnUiThread {
+                locationText.text = String.format("%.4f, %.4f", l.latitude, l.longitude)
             }
         })
         displayText.setOnClickListener {

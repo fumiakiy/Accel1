@@ -13,6 +13,7 @@ import android.hardware.SensorManager
 import android.location.Location
 import android.os.Binder
 import android.os.Build
+import android.os.Environment
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -102,7 +103,16 @@ class MainService: Service() {
             .setTicker("Ticker Message")
             .build()
         startForeground(SERVICE_ID, notification)
-        file = File.createTempFile("data.txt", null, cacheDir)
+        val path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val time = Date().time
+        val dir = File("$path/ACCEL1")
+        if (!dir.exists()) {
+            dir.mkdir()
+        }
+        val file = File("$path/ACCEL1", "ACCEL1_${time}.txt")
+        if (!file.exists()) {
+            file.createNewFile()
+        }
         writer = OutputStreamWriter(FileOutputStream(file))
         Log.d(">>>> file", file!!.absolutePath)
     }

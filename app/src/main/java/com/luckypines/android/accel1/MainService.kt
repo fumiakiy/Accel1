@@ -64,7 +64,6 @@ class MainService: Service() {
     private var accelerometer: Sensor? = null
     private var locationClient: FusedLocationProviderClient? = null
     private var binder = MainServiceBinder()
-    private var file: File? = null
     private var writer: OutputStreamWriter? = null
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -114,7 +113,6 @@ class MainService: Service() {
             file.createNewFile()
         }
         writer = OutputStreamWriter(FileOutputStream(file))
-        Log.d(">>>> file", file!!.absolutePath)
     }
 
     override fun onDestroy() {

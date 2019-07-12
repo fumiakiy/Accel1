@@ -12,6 +12,7 @@ class MainActivity : AppCompatActivity() {
 
     private val vm: MainViewModel get() = ViewModelProviders.of(this).get(MainViewModel::class.java)
     private val service: Intent get() = Intent(this, MainService::class.java)
+    private var serviceIsBound: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,22 +39,34 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        bindService(service, vm, 0)
+        if (!serviceIsBound) {
+            bindService(service, vm, 0)
+            serviceIsBound = true
+        }
         sigText.text = String.format("Count: %d", vm.dataCount)
     }
 
     override fun onPause() {
         super.onPause()
-        unbindService(vm)
+        if (serviceIsBound) {
+            unbindService(vm)
+            serviceIsBound = false
+        }
     }
 
     private fun startForegroundService() {
         startService(service)
-        bindService(service, vm, 0)
+        if (!serviceIsBound) {
+            bindService(service, vm, 0)
+            serviceIsBound = true
+        }
     }
 
     private fun stopForegroundService() {
-        unbindService(vm)
+        if (serviceIsBound) {
+            unbindService(vm)
+            serviceIsBound = false
+        }
         stopService(service)
     }
 
